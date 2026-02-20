@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { GameEngine } from '../game/engine.js'
 
-function GameCanvas({ runSignal, onScoreChange, onGameOver, onStateChange }) {
+function GameCanvas({ playerName, runSignal, onScoreChange, onGameOver, onStateChange }) {
   const canvasRef = useRef(null)
   const engineRef = useRef(null)
   const callbacksRef = useRef({ onScoreChange, onGameOver, onStateChange })
@@ -17,7 +17,7 @@ function GameCanvas({ runSignal, onScoreChange, onGameOver, onStateChange }) {
 
     const engine = new GameEngine(canvasRef.current, {
       onScoreChange: (score) => callbacksRef.current.onScoreChange?.(score),
-      onGameOver: (finalScore) => callbacksRef.current.onGameOver?.(finalScore),
+      onGameOver: (finalScore, scoreboard) => callbacksRef.current.onGameOver?.(finalScore, scoreboard),
       onStateChange: (state) => callbacksRef.current.onStateChange?.(state),
     })
 
@@ -27,6 +27,12 @@ function GameCanvas({ runSignal, onScoreChange, onGameOver, onStateChange }) {
       if (event.code === 'Space' || event.code === 'ArrowUp') {
         event.preventDefault()
         engine.jump()
+        return
+      }
+
+      if (event.code === 'ArrowRight' || event.code === 'KeyE' || event.code === 'KeyD') {
+        event.preventDefault()
+        engine.longJump()
       }
     }
 
@@ -40,12 +46,16 @@ function GameCanvas({ runSignal, onScoreChange, onGameOver, onStateChange }) {
   }, [])
 
   useEffect(() => {
+    engineRef.current?.setPlayerName(playerName)
+  }, [playerName])
+
+  useEffect(() => {
     if (runSignal <= 0) {
       return
     }
 
-    engineRef.current?.start()
-  }, [runSignal])
+    engineRef.current?.start(playerName)
+  }, [runSignal, playerName])
 
   const handlePointerDown = () => {
     engineRef.current?.jump()

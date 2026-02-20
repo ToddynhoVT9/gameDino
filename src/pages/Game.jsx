@@ -1,37 +1,66 @@
 import { useCallback, useState } from 'react'
 import GameCanvas from '../components/GameCanvas.jsx'
+import {
+  addEntry,
+  isValidPlayerName,
+  loadScoreboard,
+  sanitizeName,
+} from '../game/scoreboard.js'
 
-const HIGH_SCORE_STORAGE_KEY = 'dino_highscore'
+function formatDate(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '--'
+  }
+
+  return date.toLocaleDateString('pt-BR')
+}
 
 function Game() {
+  const [playerName, setPlayerName] = useState('')
   const [status, setStatus] = useState('idle')
   const [score, setScore] = useState(0)
-  const [highScore, setHighScore] = useState(() => {
-    const savedValue = Number(localStorage.getItem(HIGH_SCORE_STORAGE_KEY) ?? '0')
-    return Number.isFinite(savedValue) ? savedValue : 0
-  })
   const [runSignal, setRunSignal] = useState(0)
+  const [scoreboard, setScoreboard] = useState(() => loadScoreboard())
+
+  const safePlayerName = sanitizeName(playerName)
+  const isReady = isValidPlayerName(safePlayerName)
+  const globalHighScore = scoreboard.entries.length > 0 ? scoreboard.entries[0].score : 0
 
   const handleScoreChange = useCallback((nextScore) => {
     setScore(nextScore)
   }, [])
 
-  const handleGameOver = useCallback((finalScore) => {
+  const handleGameOver = useCallback((finalScore, nextScoreboard) => {
     setStatus('gameOver')
     setScore(finalScore)
 
-    setHighScore((currentHighScore) => {
-      const nextHighScore = Math.max(currentHighScore, finalScore)
-      localStorage.setItem(HIGH_SCORE_STORAGE_KEY, String(nextHighScore))
-      return nextHighScore
-    })
-  }, [])
+    if (nextScoreboard) {
+      setScoreboard(nextScoreboard)
+      return
+    }
+
+    if (isValidPlayerName(safePlayerName)) {
+      setScoreboard(addEntry({ name: safePlayerName, score: finalScore }))
+      return
+    }
+
+    setScoreboard(loadScoreboard())
+  }, [safePlayerName])
 
   const handleStateChange = useCallback((nextState) => {
     setStatus(nextState)
   }, [])
 
+  const handleNameChange = (event) => {
+    setPlayerName(sanitizeName(event.target.value))
+  }
+
   const handleStart = () => {
+    if (!isReady) {
+      return
+    }
+
     setScore(0)
     setStatus('running')
     setRunSignal((currentSignal) => currentSignal + 1)
@@ -43,8 +72,26 @@ function Game() {
     <main className="game-page">
       <header className="game-header">
         <h1>Dino React Runner</h1>
-        <p>Space, Arrow Up or click/tap on the canvas to jump.</p>
+        <p>Space/ArrowUp para pular e E, D ou ArrowRight para long jump no ar.</p>
       </header>
+
+      <section className="pre-game" aria-label="Pre game settings">
+        <label htmlFor="player-name">Nome do jogador</label>
+        <input
+          id="player-name"
+          type="text"
+          value={playerName}
+          onChange={handleNameChange}
+          placeholder="Ex.: Matheus_01"
+          maxLength={20}
+          autoComplete="off"
+        />
+        <small className={isReady ? 'ok' : 'error'}>
+          {isReady
+            ? 'Nome valido. Voce pode iniciar.'
+            : 'Use 5-20 caracteres: apenas letras, numeros e underscore.'}
+        </small>
+      </section>
 
       <section className="game-stats" aria-label="Game stats">
         <div>
@@ -56,23 +103,41 @@ function Game() {
           <strong>{score}</strong>
         </div>
         <div>
-          <span>High Score</span>
-          <strong>{highScore}</strong>
+          <span>Recorde Local</span>
+          <strong>{globalHighScore}</strong>
         </div>
       </section>
 
       <div className="game-actions">
-        <button type="button" onClick={handleStart} disabled={status === 'running'}>
+        <button type="button" onClick={handleStart} disabled={status === 'running' || !isReady}>
           {actionLabel}
         </button>
       </div>
 
       <GameCanvas
+        playerName={safePlayerName}
         runSignal={runSignal}
         onScoreChange={handleScoreChange}
         onGameOver={handleGameOver}
         onStateChange={handleStateChange}
       />
+
+      <section className="scoreboard" aria-label="Local ranking">
+        <h2>Ranking Local</h2>
+        {scoreboard.entries.length === 0 ? (
+          <p>Nenhuma partida registrada ainda.</p>
+        ) : (
+          <ol>
+            {scoreboard.entries.map((entry, index) => (
+              <li key={`${entry.name}-${entry.score}-${entry.date}-${index}`}>
+                <span>{entry.name}</span>
+                <strong>{entry.score}</strong>
+                <time dateTime={entry.date}>{formatDate(entry.date)}</time>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </main>
   )
 }
