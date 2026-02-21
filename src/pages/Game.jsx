@@ -82,7 +82,7 @@ function Game() {
       <header className="game-header">
         <h1>Runner</h1>
         <p>
-          Ceta para cima cocê pula || Ceta para baixo você agacha || Ceta para a
+          Ceta para cima você pula || Ceta para baixo você agacha || Ceta para a
           direita ativa o dash no ar.
         </p>
       </header>
