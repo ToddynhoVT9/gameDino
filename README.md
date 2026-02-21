@@ -1,6 +1,6 @@
-# Dino React Runner
+#  Runner
 
-Projeto base para um jogo estilo Dino Runner com:
+Projeto base para um jogo estilo Runner com:
 
 - `Vite`
 - `React`
@@ -47,9 +47,9 @@ src/
 
 ## Controles
 
-- `Space` ou `ArrowUp`: pular
+- `ArrowUp`: pular
 - `ArrowDown`: abaixar (altura do player em 60%)
-- `E`, `D` ou `ArrowRight` no ar: long jump (mais distancia, nao mais altura)
+- `ArrowRight` no ar: dash (mais distancia, nao mais altura)
 - Clique/toque no canvas: pular
 
 ## Regras
